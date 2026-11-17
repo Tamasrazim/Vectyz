@@ -36,7 +36,7 @@ def _add_vectorizer_options(command: argparse.ArgumentParser) -> None:
         help="Alpha values at or below this value are ignored.",
     )
     command.add_argument(
-        "--corner-angle", type=float, default=42.0,
+        "--corner-angle", type=float, default=65.0,
         help="Turning angle in degrees above which a vertex is kept as a corner.",
     )
 

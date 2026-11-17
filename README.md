@@ -52,7 +52,7 @@ Useful controls:
 | `--curve` | smooth | Use fitted cubic curves; choose `polygon` for straight segments. |
 | `--quantizer` | mediancut | Choose `mediancut`, `maxcoverage` or `fastoctree` for palette learning. |
 | `--alpha-bins` | 4 | Opacity bands used to approximate translucent pixels (1–16). |
-| `--corner-angle` | 42 | Preserve sharper turns as corners. |
+| `--corner-angle` | 65 | Preserve sharper turns as corners. |
 | `--transparent-threshold` | 4 | Ignore pixels whose alpha is at or below this value. |
 
 A sensible first pass for flat artwork is `--colors 16 --detail 0.8`. Logos with crisp edges may look better with `--curve polygon`. Photographs generally need more colors and can still create many paths. Try a different quantizer when the palette loses important colors.

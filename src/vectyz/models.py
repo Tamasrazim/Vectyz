@@ -17,7 +17,7 @@ class VectorizerConfig:
     detail: float = 1.0
     min_area: float = 2.0
     curve: str = "smooth"
-    corner_angle: float = 42.0
+    corner_angle: float = 65.0
     alpha_bins: int = 4
     transparent_threshold: int = 4
     quantizer: str = "mediancut"
