@@ -7,6 +7,7 @@ import json
 import sys
 from dataclasses import asdict
 
+from . import __version__
 from .batch import vectorize_directory
 from .engine import rasterize_svg, vectorize_image
 from .models import VectorizerConfig
@@ -57,6 +58,11 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="vectyz",
         description="Convert raster images to editable vectors and rasterize SVG artwork.",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 

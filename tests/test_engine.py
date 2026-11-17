@@ -124,6 +124,8 @@ def test_batch_conversion_preserves_subfolders_and_writes_report(tmp_path: Path)
     assert report["total"] == 2
     assert report["succeeded"] == 1
     assert report["failed"] == 1
+    assert report["settings"]["colors"] == 6
+    assert report["settings"]["curve"] == "polygon"
     assert (output / "nested" / "art.svg").is_file()
     saved_report = json.loads((output / "vectyz-report.json").read_text(encoding="utf-8"))
     assert saved_report["failed"] == 1
