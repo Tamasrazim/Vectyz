@@ -176,3 +176,23 @@ def test_batch_ignores_existing_output_subdirectory(tmp_path: Path) -> None:
     assert report["total"] == 1
     assert report["succeeded"] == 1
     assert not (output / "converted" / "old-image.svg").exists()
+
+
+def test_smooth_curve_mode_emits_cubic_segments() -> None:
+    result = vectorize_image(
+        make_test_artwork(),
+        config=VectorizerConfig(colors=8, curve="smooth"),
+    )
+    assert " C " in result.svg
+
+
+def test_writers_create_missing_output_directories(tmp_path: Path) -> None:
+    output = tmp_path / "new" / "nested" / "art.svg"
+    result = vectorize_image(make_test_artwork(), output_path=output)
+    assert output.is_file()
+    assert result.stats.paths > 0
+
+
+def test_quantizer_config_rejects_unknown_algorithm() -> None:
+    with pytest.raises(ValueError):
+        VectorizerConfig(quantizer="invented")

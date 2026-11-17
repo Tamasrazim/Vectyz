@@ -115,6 +115,7 @@ def write_vector(result: VectorizationResult, output_path: str | Path) -> None:
     destination = Path(output_path)
     extension = destination.suffix.lower()
 
+    destination.parent.mkdir(parents=True, exist_ok=True)
     if extension == ".svg":
         destination.write_text(result.svg, encoding="utf-8")
         return
@@ -170,6 +171,7 @@ def rasterize_svg(
         image = canvas
 
     destination = Path(output_path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
     output_format = destination.suffix.lower().lstrip(".")
     format_aliases = {"jpg": "JPEG", "jpeg": "JPEG", "tif": "TIFF"}
     output_format = format_aliases.get(output_format, output_format.upper())

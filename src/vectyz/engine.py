@@ -5,6 +5,8 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
+import numpy as np
+
 from .exporters import build_svg
 from .exporters import rasterize_svg as _rasterize_svg
 from .exporters import write_vector as _write_vector
@@ -37,6 +39,13 @@ def vectorize_image(
 
         vector_paths = []
         components_removed = 0
+        alpha_buckets = None
+        if settings.alpha_bins > 1:
+            alpha_buckets = np.minimum(
+                (alpha.astype(np.uint16) * settings.alpha_bins) // 256,
+                settings.alpha_bins - 1,
+            ).astype(np.uint8)
+
         for palette_index, color in palette.items():
             for alpha_bin in range(settings.alpha_bins - 1, -1, -1):
                 traced, removed = trace_palette_layer(
@@ -46,6 +55,7 @@ def vectorize_image(
                     color,
                     alpha_bin,
                     settings,
+                    alpha_buckets=alpha_buckets,
                 )
                 vector_paths.extend(traced)
                 components_removed += removed

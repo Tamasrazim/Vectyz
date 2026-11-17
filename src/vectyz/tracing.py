@@ -70,9 +70,18 @@ def contour_to_path(
             and not corners[following_index]
             and chord > 1e-6
         ):
-            handle = chord / 3.0
-            control_1 = start + tangents[index] * handle
-            control_2 = end - tangents[following_index] * handle
+            previous = points[(index - 1) % count]
+            following = points[(following_index + 1) % count]
+            start_handle = min(
+                chord / 3.0,
+                float(np.linalg.norm(start - previous)) / 2.0,
+            )
+            end_handle = min(
+                chord / 3.0,
+                float(np.linalg.norm(following - end)) / 2.0,
+            )
+            control_1 = start + tangents[index] * start_handle
+            control_2 = end - tangents[following_index] * end_handle
             commands.append(
                 "C "
                 f"{_fmt(control_1[0])} {_fmt(control_1[1])} "
@@ -139,16 +148,20 @@ def trace_palette_layer(
     color: tuple[int, int, int],
     alpha_bin: int,
     config: VectorizerConfig,
+    alpha_buckets: np.ndarray | None = None,
 ) -> tuple[list[VectorPath], int]:
     """Trace one palette color at one quantized opacity level."""
     if config.alpha_bins == 1:
         opacity_mask = alpha > config.transparent_threshold
     else:
-        bucket = np.minimum(
-            (alpha.astype(np.uint16) * config.alpha_bins) // 256,
-            config.alpha_bins - 1,
+        if alpha_buckets is None:
+            alpha_buckets = np.minimum(
+                (alpha.astype(np.uint16) * config.alpha_bins) // 256,
+                config.alpha_bins - 1,
+            )
+        opacity_mask = (alpha_buckets == alpha_bin) & (
+            alpha > config.transparent_threshold
         )
-        opacity_mask = (bucket == alpha_bin) & (alpha > config.transparent_threshold)
 
     mask = (indices == palette_index) & opacity_mask
     if not mask.any():
