@@ -650,6 +650,8 @@ async function openProject(id) {
     state.file = new File([saved.source], saved.project.name, { type: saved.source.type || 'application/octet-stream' });
     state.sourceUrl = URL.createObjectURL(state.file);
     state.resultBlob = saved.result;
+    state.svgSourceText = saved.project.type === 'vectorize' && saved.result ? await saved.result.text() : null;
+    if (state.svgSourceText) renderPaletteEditor(state.svgSourceText);
     state.rasterBlob = saved.project.type === 'rasterize' ? saved.result : null;
     $('dropzone').hidden = true;
     $('preview-panel').hidden = false;
