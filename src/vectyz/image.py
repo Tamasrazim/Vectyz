@@ -73,7 +73,7 @@ def quantize_rgba(
         sample_image = Image.fromarray(
             sample.reshape(sample_height, sample_width, 3), mode="RGB"
         )
-        rgb_image = Image.fromarray(rgba[:, :, :3], mode="RGB")
+        rgb_image = Image.fromarray(rgba[:, :, :3])
         palette_source = None
         quantized = None
         try:

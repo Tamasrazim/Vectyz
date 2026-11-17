@@ -135,3 +135,44 @@ def test_batch_rejects_same_input_and_output_directory(tmp_path: Path) -> None:
     (source / "test.png").write_bytes(b"bad")
     with pytest.raises(ValueError):
         vectorize_directory(source, source)
+
+
+@pytest.mark.parametrize("quantizer", ["mediancut", "maxcoverage", "fastoctree"])
+def test_supported_palette_quantizers(quantizer: str) -> None:
+    result = vectorize_image(
+        make_test_artwork(),
+        config=VectorizerConfig(colors=8, quantizer=quantizer),
+    )
+    assert result.stats.colors_used <= 8
+    assert result.stats.paths > 0
+
+
+def test_svg_groups_disconnected_shapes_with_same_fill_style() -> None:
+    image = Image.new("RGBA", (80, 30), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((3, 5, 20, 24), fill=(210, 35, 50, 255))
+    draw.rectangle((55, 5, 76, 24), fill=(210, 35, 50, 255))
+    result = vectorize_image(
+        image,
+        config=VectorizerConfig(colors=2, curve="polygon"),
+    )
+    assert result.stats.paths == 2
+    assert result.svg.count("<path ") == 1
+
+
+def test_batch_ignores_existing_output_subdirectory(tmp_path: Path) -> None:
+    source = tmp_path / "input"
+    output = source / "converted"
+    output.mkdir(parents=True)
+    make_test_artwork().save(source / "art.png")
+    make_test_artwork().save(output / "old-image.png")
+
+    report = vectorize_directory(
+        source,
+        output,
+        config=VectorizerConfig(colors=4),
+        recursive=True,
+    )
+    assert report["total"] == 1
+    assert report["succeeded"] == 1
+    assert not (output / "converted" / "old-image.svg").exists()

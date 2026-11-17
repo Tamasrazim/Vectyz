@@ -38,7 +38,16 @@ def vectorize_directory(
 
     iterator = source_root.rglob("*") if recursive else source_root.iterdir()
     sources = sorted(
-        (path for path in iterator if path.is_file() and path.suffix.lower() in RASTER_EXTENSIONS),
+        (
+            path
+            for path in iterator
+            if path.is_file()
+            and path.suffix.lower() in RASTER_EXTENSIONS
+            and not (
+                destination_root.is_relative_to(source_root)
+                and path.is_relative_to(destination_root)
+            )
+        ),
         key=lambda path: path.relative_to(source_root).as_posix().casefold(),
     )
     if not sources:
