@@ -25,4 +25,5 @@ jobs:
         if: runner.os == 'Windows'
         run: python -m pip install -e ".[dev]"
       - run: pytest
+      - run: python -m vectyz --version
       - run: ruff check src tests
