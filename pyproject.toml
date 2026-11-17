@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vectyz"
+version = "0.1.0"
+description = "A deterministic raster-to-vector and vector-to-raster conversion engine."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+authors = [{ name = "Robiul Rumman Razim" }]
+dependencies = [
+  "numpy>=1.24",
+  "Pillow>=10.0",
+  "opencv-python-headless>=4.8",
+]
+
+[project.optional-dependencies]
+render = ["CairoSVG>=2.7"]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[project.scripts]
+vectyz = "vectyz.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
