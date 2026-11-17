@@ -371,6 +371,10 @@ function updateProgress(phase, progress) {
 function createEditorDocument(svgText) {
   const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
   if (doc.querySelector('parsererror') || doc.documentElement.localName !== 'svg') throw new Error('The SVG geometry could not be loaded.');
+  for (const path of Array.from(doc.documentElement.children).filter((node) => node.localName === 'path')) {
+    const fill = path.getAttribute('fill');
+    if (fill) path.setAttribute('data-vectyz-original-fill', fill);
+  }
   return doc;
 }
 
@@ -460,7 +464,9 @@ function applyPathTransform() {
   const y = Math.max(-100000, Math.min(100000, Number($('path-y').value) || 0));
   const scale = Math.max(0.05, Math.min(20, Number($('path-scale').value) || 1));
   const rotation = Math.max(-360, Math.min(360, Number($('path-rotation').value) || 0));
-  const box = path.getBBox ? path.getBBox() : { x: 0, y: 0, width: 0, height: 0 };
+  const renderedPath = $('geometry-overlay').querySelector('[data-path-index="' + state.selectedPath + '"]');
+  let box = { x: 0, y: 0, width: 0, height: 0 };
+  try { if (renderedPath) box = renderedPath.getBBox(); } catch { /* Fall back to the SVG origin when geometry bounds are unavailable. */ }
   const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
   path.setAttribute('transform', 'translate(' + x + ' ' + y + ') translate(' + cx + ' ' + cy + ') rotate(' + rotation + ') scale(' + scale + ') translate(' + (-cx) + ' ' + (-cy) + ')');
   path.setAttribute('data-vectyz-transform', JSON.stringify({ x, y, scale, rotation }));
@@ -496,14 +502,12 @@ function resetAllGeometry() {
 }
 
 function applyPaletteOverrides() {
-  if (!state.editorDoc || !state.svgSourceText) return;
-  const sourcePaths = Array.from(createEditorDocument(state.svgSourceText).documentElement.children).filter((node) => node.localName === 'path');
-  const paths = getEditorPaths();
-  paths.forEach((path, index) => {
-    const sourceFill = sourcePaths[index]?.getAttribute('fill');
-    if (sourceFill && state.paletteOverrides.has(sourceFill)) path.setAttribute('fill', state.paletteOverrides.get(sourceFill));
-    else if (sourceFill) path.setAttribute('fill', sourceFill);
-  });
+  if (!state.editorDoc) return;
+  for (const path of getEditorPaths()) {
+    const sourceFill = path.getAttribute('data-vectyz-original-fill');
+    if (!sourceFill) continue;
+    path.setAttribute('fill', state.paletteOverrides.get(sourceFill) || sourceFill);
+  }
 }
 
 async function publishEditorDocument() {
