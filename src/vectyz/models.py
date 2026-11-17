@@ -20,6 +20,7 @@ class VectorizerConfig:
     corner_angle: float = 42.0
     alpha_bins: int = 4
     transparent_threshold: int = 4
+    quantizer: str = "mediancut"
 
     def __post_init__(self) -> None:
         if not 2 <= self.colors <= 256:
@@ -36,6 +37,10 @@ class VectorizerConfig:
             raise ValueError("alpha_bins must be between 1 and 16")
         if not 0 <= self.transparent_threshold <= 254:
             raise ValueError("transparent_threshold must be between 0 and 254")
+        if self.quantizer not in {"mediancut", "maxcoverage", "fastoctree"}:
+            raise ValueError(
+                "quantizer must be 'mediancut', 'maxcoverage' or 'fastoctree'"
+            )
 
 
 @dataclass(frozen=True, slots=True)

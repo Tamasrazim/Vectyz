@@ -3,25 +3,32 @@
 from __future__ import annotations
 
 import re
+from collections import OrderedDict
 from collections.abc import Iterable
 from pathlib import Path
 
 from PIL import Image
 
-from .models import VectorizationResult, VectorPath
+from .models import VectorPath, VectorizationResult
 
 
 def build_svg(
     width: int, height: int, vector_paths: Iterable[VectorPath]
 ) -> str:
-    paths = tuple(vector_paths)
+    """Build an SVG, combining disconnected contours that share a fill style."""
+    grouped: OrderedDict[tuple[tuple[int, int, int], float], list[str]] = OrderedDict()
+    for path in vector_paths:
+        key = (path.color, round(max(0.0, min(1.0, path.opacity)), 5))
+        grouped.setdefault(key, []).append(path.data)
+
     body: list[str] = []
-    for path in paths:
-        red, green, blue = path.color
+    for (color_rgb, opacity), subpaths in grouped.items():
+        red, green, blue = color_rgb
         color = f"#{red:02x}{green:02x}{blue:02x}"
+        path_data = " ".join(subpaths)
         body.append(
-            f'<path d="{path.data}" fill="{color}" '
-            f'fill-opacity="{path.opacity:.5f}" fill-rule="evenodd"/>'
+            f'<path d="{path_data}" fill="{color}" '
+            f'fill-opacity="{opacity:.5f}" fill-rule="evenodd"/>'
         )
 
     contents = "\n  ".join(body)

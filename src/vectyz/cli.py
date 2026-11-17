@@ -23,6 +23,12 @@ def _add_vectorizer_options(command: argparse.ArgumentParser) -> None:
         "--curve", choices=("smooth", "polygon"), default="smooth",
         help="Cubic Bézier fitting or polygon-only paths.",
     )
+    command.add_argument(
+        "--quantizer",
+        choices=("mediancut", "maxcoverage", "fastoctree"),
+        default="mediancut",
+        help="Palette algorithm: median cut, maximum coverage or fast octree.",
+    )
     command.add_argument("--alpha-bins", type=int, default=4, help="Opacity bands (1–16).")
     command.add_argument(
         "--transparent-threshold", type=int, default=4,
@@ -43,6 +49,7 @@ def _config_from_args(args: argparse.Namespace) -> VectorizerConfig:
         corner_angle=args.corner_angle,
         alpha_bins=args.alpha_bins,
         transparent_threshold=args.transparent_threshold,
+        quantizer=args.quantizer,
     )
 
 

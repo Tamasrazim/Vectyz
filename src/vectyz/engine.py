@@ -29,7 +29,10 @@ def vectorize_image(
     try:
         width, height = image.size
         indices, alpha, palette = quantize_rgba(
-            image, settings.colors, settings.transparent_threshold
+            image,
+            settings.colors,
+            settings.transparent_threshold,
+            settings.quantizer,
         )
 
         vector_paths = []

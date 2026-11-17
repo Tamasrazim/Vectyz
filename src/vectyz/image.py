@@ -11,6 +11,12 @@ from PIL import Image, ImageOps
 
 ImageSource = str | Path | bytes | bytearray | BinaryIO | Image.Image
 
+_QUANTIZERS = {
+    "mediancut": Image.Quantize.MEDIANCUT,
+    "maxcoverage": Image.Quantize.MAXCOVERAGE,
+    "fastoctree": Image.Quantize.FASTOCTREE,
+}
+
 
 def load_rgba(source: ImageSource) -> Image.Image:
     """Load an image, apply EXIF orientation and return an independent RGBA image."""
@@ -28,9 +34,17 @@ def load_rgba(source: ImageSource) -> Image.Image:
 
 
 def quantize_rgba(
-    image: Image.Image, colors: int, transparent_threshold: int
+    image: Image.Image,
+    colors: int,
+    transparent_threshold: int,
+    quantizer: str = "mediancut",
 ) -> tuple[np.ndarray, np.ndarray, dict[int, tuple[int, int, int]]]:
     """Learn a palette from visible pixels and map the full image to that palette."""
+    try:
+        method = _QUANTIZERS[quantizer]
+    except KeyError as exc:
+        raise ValueError(f"Unsupported quantizer: {quantizer}") from exc
+
     rgba_image = image.convert("RGBA")
     try:
         rgba = np.asarray(rgba_image, dtype=np.uint8)
@@ -40,17 +54,32 @@ def quantize_rgba(
             return np.zeros(alpha.shape, dtype=np.uint8), alpha, {}
 
         visible_pixels = rgba[:, :, :3][visible]
-        # A deterministic sample bounds palette-learning memory on very large images.
-        stride = max(1, len(visible_pixels) // 100_000)
-        sample = visible_pixels[::stride]
-        sample_image = Image.fromarray(sample.reshape(1, -1, 3))
-        rgb_image = Image.fromarray(rgba[:, :, :3])
+        # Learn from at most 100,000 evenly distributed visible pixels.
+        sample_count = min(100_000, len(visible_pixels))
+        sample_positions = np.linspace(
+            0, len(visible_pixels) - 1, num=sample_count, dtype=np.int64
+        )
+        sample = visible_pixels[sample_positions]
+
+        # Keep the palette-learning image rectangular and within normal image dimensions.
+        sample_width = min(1000, sample_count)
+        sample_height = (sample_count + sample_width - 1) // sample_width
+        padded_count = sample_width * sample_height
+        if padded_count != sample_count:
+            padded = np.empty((padded_count, 3), dtype=np.uint8)
+            padded[:sample_count] = sample
+            padded[sample_count:] = sample[-1]
+            sample = padded
+        sample_image = Image.fromarray(
+            sample.reshape(sample_height, sample_width, 3), mode="RGB"
+        )
+        rgb_image = Image.fromarray(rgba[:, :, :3], mode="RGB")
         palette_source = None
         quantized = None
         try:
             palette_source = sample_image.quantize(
                 colors=colors,
-                method=Image.Quantize.MEDIANCUT,
+                method=method,
                 dither=Image.Dither.NONE,
             )
             quantized = rgb_image.quantize(

@@ -39,7 +39,7 @@ vectyz vectorize "C:\Images\logo.png" "C:\Images\logo.svg"
 ### 2. Tune the vector result
 
 ```powershell
-vectyz vectorize "C:\Images\illustration.png" "C:\Images\illustration.svg" --colors 24 --detail 0.7 --curve smooth
+vectyz vectorize "C:\Images\illustration.png" "C:\Images\illustration.svg" --colors 24 --detail 0.7 --curve smooth --quantizer maxcoverage
 ```
 
 Useful controls:
@@ -50,11 +50,12 @@ Useful controls:
 | `--detail` | 1.0 | Contour simplification; lower retains more detail. |
 | `--min-area` | 2.0 | Remove tiny outer regions smaller than this area in source pixels. |
 | `--curve` | smooth | Use fitted cubic curves; choose `polygon` for straight segments. |
+| `--quantizer` | mediancut | Choose `mediancut`, `maxcoverage` or `fastoctree` for palette learning. |
 | `--alpha-bins` | 4 | Opacity bands used to approximate translucent pixels (1–16). |
 | `--corner-angle` | 42 | Preserve sharper turns as corners. |
 | `--transparent-threshold` | 4 | Ignore pixels whose alpha is at or below this value. |
 
-A sensible first pass for flat artwork is `--colors 16 --detail 0.8`. Logos with crisp edges may look better with `--curve polygon`. Photographs generally need more colors and can still create many paths.
+A sensible first pass for flat artwork is `--colors 16 --detail 0.8`. Logos with crisp edges may look better with `--curve polygon`. Photographs generally need more colors and can still create many paths. Try a different quantizer when the palette loses important colors.
 
 ### 3. Export PDF or EPS
 
@@ -106,6 +107,7 @@ settings = VectorizerConfig(
     colors=24,
     detail=0.7,
     curve="smooth",
+    quantizer="maxcoverage",
     alpha_bins=4,
 )
 
