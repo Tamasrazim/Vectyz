@@ -4,104 +4,154 @@
 
 Vectyz turns raster images into editable vector paths using palette quantization, connected-region tracing, contour simplification and corner-aware cubic Bézier fitting. It can also rasterize SVG artwork into common bitmap formats.
 
-The project is an engine and command-line tool. It is not a drawing application, and it does not embed a bitmap in an SVG as a substitute for vectorization.
+Vectyz is an engine and command-line tool, not a drawing application. It traces the image into real vector paths; it does not place the original bitmap inside an SVG.
 
-## Current capabilities
+## Install on Windows
 
-### Raster to vector
-- Input: PNG, JPEG, WebP, BMP, TIFF and other formats supported by Pillow.
-- Deterministic palette reduction with a configurable limit of 2–256 colors.
-- Per-color region masks and contour extraction.
-- Interior-hole preservation with even-odd fill rules.
-- Small-component filtering to reduce isolated noise.
-- Polygon or corner-aware cubic Bézier path output.
-- Transparent input support, with configurable alpha quantization.
-- Output: SVG, PDF and EPS.
+Install Python 3.10 or newer, then open PowerShell:
 
-### Vector to raster
-- SVG input rasterized through CairoSVG.
-- PNG, JPEG, WebP, TIFF and BMP output.
-- Optional output dimensions and background compositing.
-
-## Install
-
-Python 3.10 or newer is required.
-
-```bash
-python -m pip install -e .
-```
-
-Install the optional SVG rasterizer dependency when using the `rasterize` command or PDF export:
-
-```bash
+```powershell
+git clone https://github.com/Tamasrazim/Vectyz.git
+cd Vectyz
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 python -m pip install -e ".[render]"
 ```
 
-For development and tests:
+The `render` extra installs CairoSVG, which enables SVG-to-raster conversion and PDF export. Raster-to-SVG and EPS conversion work with the base package.
 
-```bash
-python -m pip install -e ".[dev,render]"
-pytest
+If PowerShell blocks activation, run this once in the current terminal and activate again:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
 ```
 
-## Usage
+## Use it
 
-Vectorize a raster image:
+### 1. Convert one image to SVG
 
-```bash
-vectyz vectorize input.png output.svg
+```powershell
+vectyz vectorize "C:\Images\logo.png" "C:\Images\logo.svg"
 ```
 
-Use a limited palette and smoother curves:
+### 2. Tune the vector result
 
-```bash
-vectyz vectorize input.jpg output.svg --colors 24 --detail 0.8 --curve smooth
+```powershell
+vectyz vectorize "C:\Images\illustration.png" "C:\Images\illustration.svg" --colors 24 --detail 0.7 --curve smooth
 ```
 
-Export to PDF or EPS by changing the output extension:
+Useful controls:
 
-```bash
-vectyz vectorize input.png output.pdf --colors 16
-vectyz vectorize input.png output.eps --colors 16
-```
-
-Rasterize an SVG:
-
-```bash
-vectyz rasterize artwork.svg output.png --width 2400
-vectyz rasterize artwork.svg output.webp --width 1600 --height 1600 --background "#ffffff"
-```
-
-See `vectyz --help`, `vectyz vectorize --help` and `vectyz rasterize --help` for all options.
-
-## Vectorization controls
-
-| Option | Default | Meaning |
+| Option | Default | Effect |
 | --- | ---: | --- |
-| `--colors` | 16 | Maximum number of palette colors (2–256). |
-| `--detail` | 1.0 | Contour simplification tolerance. Lower values retain more points. |
-| `--min-area` | 2.0 | Ignore outer components smaller than this many source pixels. |
-| `--curve` | smooth | Use corner-aware cubic Bézier segments or straight polygon segments. |
-| `--alpha-bins` | 4 | Number of opacity bands used to approximate partial transparency. |
-| `--corner-angle` | 42 | Preserve vertices whose turning angle exceeds this value. |
-| `--transparent-threshold` | 4 | Alpha values at or below this value are treated as transparent. |
+| `--colors` | 16 | Maximum number of color regions (2–256). |
+| `--detail` | 1.0 | Contour simplification; lower retains more detail. |
+| `--min-area` | 2.0 | Remove tiny outer regions smaller than this area in source pixels. |
+| `--curve` | smooth | Use fitted cubic curves; choose `polygon` for straight segments. |
+| `--alpha-bins` | 4 | Opacity bands used to approximate translucent pixels (1–16). |
+| `--corner-angle` | 42 | Preserve sharper turns as corners. |
+| `--transparent-threshold` | 4 | Ignore pixels whose alpha is at or below this value. |
+
+A sensible first pass for flat artwork is `--colors 16 --detail 0.8`. Logos with crisp edges may look better with `--curve polygon`. Photographs generally need more colors and can still create many paths.
+
+### 3. Export PDF or EPS
+
+```powershell
+vectyz vectorize "C:\Images\logo.png" "C:\Images\logo.pdf"
+vectyz vectorize "C:\Images\logo.png" "C:\Images\logo.eps"
+```
+
+PDF export needs the `render` extra. EPS does not support alpha, so translucent regions are composited against white.
+
+### 4. Convert a whole folder
+
+```powershell
+vectyz batch "C:\Images\input" "C:\Images\vectors"
+```
+
+Include subfolders and preserve their structure:
+
+```powershell
+vectyz batch "C:\Images\input" "C:\Images\vectors" --recursive --format svg --colors 24 --detail 0.8
+```
+
+Batch mode processes one file at a time to keep memory use predictable. It writes a `vectyz-report.json` containing per-file statistics and failures. A failed image does not stop the remaining batch.
+
+### 5. Convert SVG back to a raster image
+
+```powershell
+vectyz rasterize "C:\Images\logo.svg" "C:\Images\logo.png" --width 2400
+vectyz rasterize "C:\Images\logo.svg" "C:\Images\logo.webp" --width 1600 --height 1600 --background "#ffffff"
+```
+
+Supported raster outputs: PNG, JPEG, WebP, TIFF and BMP. Omit `--background` to keep transparency where the target format supports it.
+
+### 6. Run without activating the environment
+
+From the repository folder:
+
+```powershell
+.\.venv\Scripts\python.exe -m vectyz --help
+.\.venv\Scripts\python.exe -m vectyz vectorize "C:\Images\logo.png" "C:\Images\logo.svg"
+```
+
+## Python API
+
+```python
+from vectyz import VectorizerConfig, vectorize_image
+
+settings = VectorizerConfig(
+    colors=24,
+    detail=0.7,
+    curve="smooth",
+    alpha_bins=4,
+)
+
+result = vectorize_image("input.png", "output.svg", settings)
+print(result.stats)
+```
+
+To vectorize a directory from Python:
+
+```python
+from vectyz import VectorizerConfig, vectorize_directory
+
+report = vectorize_directory(
+    "input_images",
+    "output_vectors",
+    config=VectorizerConfig(colors=24, detail=0.8),
+    output_format="svg",
+    recursive=True,
+)
+print(f"Converted {report['succeeded']} of {report['total']} files")
+```
 
 ## Architecture
 
-- `image.py`: safe image loading, EXIF orientation and palette quantization.
-- `tracing.py`: color/alpha masks, connected contours, hole relationships and path fitting.
-- `engine.py`: public conversion pipeline and statistics.
+- `image.py`: image loading, EXIF orientation and palette quantization.
+- `tracing.py`: color/alpha masks, contour extraction, hole relationships and path fitting.
+- `engine.py`: single-image conversion pipeline and statistics.
+- `batch.py`: sequential folder conversion and machine-readable reports.
 - `exporters.py`: SVG, PDF, EPS and raster output.
 - `cli.py`: command-line interface.
+- `models.py`: validated conversion settings and result types.
 
-The tracing pipeline is deterministic for the same input, Pillow/OpenCV versions and settings. It is classical image processing, not a machine-learning model: it does not infer semantic objects or recover hidden details from a photograph.
+The pipeline is deterministic for the same input, dependency versions and settings. It uses classical image processing, not machine learning: it does not infer semantic objects or recover details hidden in a photograph.
 
 ## Current limitations
 
 - Photographs can produce many small regions and are not guaranteed to become compact, hand-editable illustrations.
-- Palette quantization approximates gradients; it does not reconstruct continuous vector gradients.
-- The smooth curve fitter is geometry-based and can still need a lower `--detail` value for intricate artwork.
-- EPS has no native alpha support, so translucent fills are composited against white.
-- SVG rasterization requires the optional `render` extra.
+- Palette quantization approximates gradients; continuous vector-gradient reconstruction is not implemented.
+- The current smooth curve fitter is geometry-based and may need a lower `--detail` value for intricate artwork.
+- EPS has no native alpha support; translucent fills are composited against white.
+- SVG-to-raster conversion and PDF export require CairoSVG.
 
-Vectyz is under active development. The current implementation provides the first end-to-end conversion pipeline and test suite; advanced geometry recognition, gradient reconstruction, and performance work remain future engineering tasks.
+## Development
+
+```powershell
+python -m pip install -e ".[dev,render]"
+pytest
+ruff check src tests
+```

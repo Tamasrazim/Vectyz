@@ -1,11 +1,18 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
 from PIL import Image, ImageDraw
 
-from vectyz import VectorizerConfig, rasterize_svg, vectorize_image, write_vector
+from vectyz import (
+    VectorizerConfig,
+    rasterize_svg,
+    vectorize_directory,
+    vectorize_image,
+    write_vector,
+)
 
 
 def make_test_artwork() -> Image.Image:
@@ -97,3 +104,34 @@ def test_transparent_hidden_colors_do_not_create_vector_regions() -> None:
     result = vectorize_image(image, config=VectorizerConfig(colors=4))
     assert result.stats.colors_used == 1
     assert result.stats.paths == 1
+
+
+def test_batch_conversion_preserves_subfolders_and_writes_report(tmp_path: Path) -> None:
+    source = tmp_path / "input"
+    output = tmp_path / "output"
+    nested = source / "nested"
+    nested.mkdir(parents=True)
+    make_test_artwork().save(nested / "art.png")
+    (source / "broken.png").write_bytes(b"not a real image")
+
+    report = vectorize_directory(
+        source,
+        output,
+        config=VectorizerConfig(colors=6, curve="polygon"),
+        recursive=True,
+    )
+
+    assert report["total"] == 2
+    assert report["succeeded"] == 1
+    assert report["failed"] == 1
+    assert (output / "nested" / "art.svg").is_file()
+    saved_report = json.loads((output / "vectyz-report.json").read_text(encoding="utf-8"))
+    assert saved_report["failed"] == 1
+
+
+def test_batch_rejects_same_input_and_output_directory(tmp_path: Path) -> None:
+    source = tmp_path / "same"
+    source.mkdir()
+    (source / "test.png").write_bytes(b"bad")
+    with pytest.raises(ValueError):
+        vectorize_directory(source, source)

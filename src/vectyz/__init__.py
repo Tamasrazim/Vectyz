@@ -1,5 +1,6 @@
 """Vectyz raster/vector conversion engine."""
 
+from .batch import vectorize_directory
 from .engine import rasterize_svg, vectorize_image, write_vector
 from .models import VectorizationResult, VectorizationStats, VectorizerConfig
 
@@ -8,6 +9,7 @@ __all__ = [
     "VectorizationStats",
     "VectorizerConfig",
     "rasterize_svg",
+    "vectorize_directory",
     "vectorize_image",
     "write_vector",
 ]
