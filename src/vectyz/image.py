@@ -9,7 +9,6 @@ from typing import BinaryIO
 import numpy as np
 from PIL import Image, ImageOps
 
-
 ImageSource = str | Path | bytes | bytearray | BinaryIO | Image.Image
 
 
