@@ -143,7 +143,7 @@ function updateModeUi() {
 
 function setMode(mode) {
   if (!['vectorize', 'rasterize'].includes(mode)) return;
-  if (state.mode !== mode) resetWorkspace();
+  if (state.mode !== mode || !$('library-panel').hidden) resetWorkspace();
   state.mode = mode;
   updateModeUi();
 }
@@ -515,8 +515,12 @@ async function renderLibrary() {
     remove.textContent = 'Delete';
     remove.addEventListener('click', async () => {
       await deleteProject(project.id);
-      if (state.projectId === project.id) resetWorkspace();
-      await renderLibrary();
+      if (state.projectId === project.id) {
+        resetWorkspace();
+        showLibrary();
+      } else {
+        await renderLibrary();
+      }
       await updateStorageLabel();
     });
     row.append(open, remove);
