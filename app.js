@@ -393,8 +393,10 @@ function renderPaletteEditor(svgText) {
 async function recolorSvg(original, replacement, codeLabel) {
   if (!state.svgSourceText) return;
   const doc = new DOMParser().parseFromString(state.svgSourceText, 'image/svg+xml');
+  const palette = new Map(Array.from($('palette-list').querySelectorAll('input[type=color]'), (input) => [input.dataset.original, input.value]));
   for (const path of doc.querySelectorAll('path[fill]')) {
-    if (path.getAttribute('fill') === original) path.setAttribute('fill', replacement);
+    const fill = path.getAttribute('fill');
+    if (palette.has(fill)) path.setAttribute('fill', palette.get(fill));
   }
   const serialized = new XMLSerializer().serializeToString(doc.documentElement);
   state.resultBlob = new Blob(['<?xml version="1.0" encoding="UTF-8"?>\\n' + serialized], { type: 'image/svg+xml;charset=utf-8' });
@@ -441,7 +443,7 @@ async function saveCurrentProject(resultBlob, details) {
     sourceSize: state.file.size,
     resultSize: resultBlob.size,
     settings: state.mode === 'vectorize' ? getSettings() : null,
-    details: details || null,
+    details: details || previous?.details || null,
   };
   await saveProject(project, state.file, resultBlob);
   await renderLibrary();
