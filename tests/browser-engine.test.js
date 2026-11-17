@@ -92,3 +92,30 @@ test('clamps browser settings to supported ranges', () => {
   assert.equal(result.stats.height, 4);
   assert.ok(result.stats.colorsUsed <= 64);
 });
+
+
+test('indexes multiple visible color classes without changing deterministic contours', () => {
+  const source = image(20, 12, (x, y) => {
+    if (x < 6) return [240, 30, 20, 255];
+    if (x < 13) return [20, 180, 60, 255];
+    if (y < 6) return [30, 80, 230, 255];
+    return [0, 0, 0, 0];
+  });
+  const settings = { colors: 4, alphaBins: 1, curve: 'polygon', minArea: 0 };
+  const first = vectorizeImageData(source, settings);
+  const second = vectorizeImageData(source, settings);
+  assert.equal(first.svg, second.svg);
+  assert.equal(first.stats.paths, 3);
+  assert.equal(first.stats.colorsUsed, 3);
+});
+
+test('rejects invalid ImageData dimensions and pixel-buffer lengths', () => {
+  assert.throws(
+    () => vectorizeImageData({ width: 0, height: 4, data: new Uint8ClampedArray(0) }),
+    /positive integers/
+  );
+  assert.throws(
+    () => vectorizeImageData({ width: 2, height: 2, data: new Uint8ClampedArray(15) }),
+    /does not match/
+  );
+});
