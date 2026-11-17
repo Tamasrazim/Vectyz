@@ -5,7 +5,9 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from .exporters import build_svg, rasterize_svg as _rasterize_svg, write_vector as _write_vector
+from .exporters import build_svg
+from .exporters import rasterize_svg as _rasterize_svg
+from .exporters import write_vector as _write_vector
 from .image import ImageSource, load_rgba, quantize_rgba
 from .models import VectorizationResult, VectorizationStats, VectorizerConfig
 from .tracing import trace_palette_layer

@@ -7,7 +7,7 @@ import math
 import cv2
 import numpy as np
 
-from .models import VectorPath, VectorizerConfig
+from .models import VectorizerConfig, VectorPath
 
 
 def _fmt(value: float) -> str:
@@ -143,19 +143,19 @@ def trace_palette_layer(
     """Trace one palette color at one quantized opacity level."""
     if config.alpha_bins == 1:
         opacity_mask = alpha > config.transparent_threshold
-        opacity = float(alpha[opacity_mask].mean() / 255.0) if opacity_mask.any() else 1.0
     else:
         bucket = np.minimum(
             (alpha.astype(np.uint16) * config.alpha_bins) // 256,
             config.alpha_bins - 1,
         )
         opacity_mask = (bucket == alpha_bin) & (alpha > config.transparent_threshold)
-        opacity = float(alpha[opacity_mask].mean() / 255.0) if opacity_mask.any() else 0.0
 
     mask = (indices == palette_index) & opacity_mask
     if not mask.any():
         return [], 0
 
+    # Opacity must be measured for this palette region, not the whole alpha bucket.
+    opacity = float(alpha[mask].mean() / 255.0)
     paths, removed = trace_mask(mask, config)
     vector_paths = [
         VectorPath(data=path, color=color, opacity=opacity) for path in paths

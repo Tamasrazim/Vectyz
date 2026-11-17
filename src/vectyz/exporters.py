@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 from PIL import Image
 
-from .models import VectorPath, VectorizationResult
+from .models import VectorizationResult, VectorPath
 
 
 def build_svg(
@@ -99,7 +99,7 @@ def write_eps(result: VectorizationResult, output_path: str | Path) -> None:
             ]
         )
 
-    lines.extend(["grestore", "showpage", "%%EOF", ""])
+    lines.extend(["grestore", "%%EOF", ""])
     Path(output_path).write_text("\n".join(lines), encoding="ascii")
 
 
@@ -154,7 +154,8 @@ def rasterize_svg(
     )
     from io import BytesIO
 
-    image = Image.open(BytesIO(png_bytes)).convert("RGBA")
+    with Image.open(BytesIO(png_bytes)) as decoded:
+        image = decoded.convert("RGBA")
     if background:
         canvas = Image.new("RGBA", image.size, background)
         canvas.alpha_composite(image)
@@ -176,9 +177,13 @@ def rasterize_svg(
             matte.alpha_composite(image)
             image.close()
             image = matte
-        image = image.convert("RGB")
+        converted = image.convert("RGB")
+        image.close()
+        image = converted
     elif output_format == "BMP":
-        image = image.convert("RGB")
+        converted = image.convert("RGB")
+        image.close()
+        image = converted
 
     image.save(destination, format=output_format)
     image.close()
