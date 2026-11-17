@@ -16,10 +16,23 @@ cd Vectyz
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
+python -m pip install -e .
+```
+
+This base install is enough for raster-to-SVG and EPS conversion. PDF export and SVG-to-raster conversion use CairoSVG:
+
+```powershell
 python -m pip install -e ".[render]"
 ```
 
-The `render` extra installs CairoSVG, which enables SVG-to-raster conversion and PDF export. Raster-to-SVG and EPS conversion work with the base package.
+On Windows, CairoSVG may also need the native Cairo DLLs. Install the 64-bit GTK3 Runtime, then point cairocffi to its `bin` directory for the current PowerShell session:
+
+```powershell
+$env:CAIROCFFI_DLL_DIRECTORIES = "C:\Program Files\GTK3-Runtime Win64\bin"
+python -c "import cairosvg; print('CairoSVG ready')"
+```
+
+Only the optional PDF and SVG-rasterization features need this native rendering runtime; the raster-to-vector engine does not.
 
 If PowerShell blocks activation, run this once in the current terminal and activate again:
 

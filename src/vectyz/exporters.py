@@ -125,9 +125,11 @@ def write_vector(result: VectorizationResult, output_path: str | Path) -> None:
     if extension == ".pdf":
         try:
             import cairosvg
-        except ImportError as exc:
+        except (ImportError, OSError) as exc:
             raise RuntimeError(
-                "PDF export requires CairoSVG. Install with: pip install 'vectyz[render]'"
+                "PDF export requires CairoSVG and the native Cairo library. "
+                "Install with: pip install 'vectyz[render]'. On Windows, install the "
+                "64-bit GTK3 Runtime and set CAIROCFFI_DLL_DIRECTORIES to its bin folder."
             ) from exc
         cairosvg.svg2pdf(bytestring=result.svg.encode("utf-8"), write_to=str(destination))
         return
@@ -150,9 +152,11 @@ def rasterize_svg(
 
     try:
         import cairosvg
-    except ImportError as exc:
+    except (ImportError, OSError) as exc:
         raise RuntimeError(
-            "SVG rasterization requires CairoSVG. Install with: pip install 'vectyz[render]'"
+            "SVG rasterization requires CairoSVG and the native Cairo library. "
+            "Install with: pip install 'vectyz[render]'. On Windows, install the "
+            "64-bit GTK3 Runtime and set CAIROCFFI_DLL_DIRECTORIES to its bin folder."
         ) from exc
 
     png_bytes = cairosvg.svg2png(
