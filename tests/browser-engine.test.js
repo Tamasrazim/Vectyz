@@ -60,3 +60,35 @@ test('separates regions that touch at one corner', () => {
   const result = vectorizeImageData(source, { colors: 2, curve: 'polygon', minArea: 0 });
   assert.equal(result.stats.paths, 2);
 });
+
+test('keeps separate opacity bands for translucent regions', () => {
+  const source = image(6, 4, (x, y) => (y < 2 ? [80, 160, 240, 255] : [80, 160, 240, 64]));
+  const result = vectorizeImageData(source, { colors: 2, alphaBins: 2, minArea: 0, curve: 'polygon' });
+  assert.equal(result.stats.colorsUsed, 1);
+  assert.equal(result.stats.paths, 2);
+  assert.match(result.svg, /fill-opacity="1\.00000"/);
+  assert.match(result.svg, /fill-opacity="0\.25098"/);
+});
+
+test('removes isolated regions below the configured area threshold', () => {
+  const source = image(9, 5, (x, y) => ((x >= 1 && x <= 3 && y >= 1 && y <= 3) || (x === 7 && y === 2) ? [190, 90, 30, 255] : [0, 0, 0, 0]));
+  const result = vectorizeImageData(source, { colors: 2, minArea: 2, curve: 'polygon' });
+  assert.equal(result.stats.paths, 1);
+  assert.equal(result.stats.componentsRemoved, 1);
+});
+
+test('clamps browser settings to supported ranges', () => {
+  const source = image(4, 4, (x, y) => (x === y ? [20, 80, 140, 255] : [0, 0, 0, 0]));
+  const result = vectorizeImageData(source, {
+    colors: 999,
+    alphaBins: 99,
+    detail: -10,
+    minArea: -1,
+    cornerAngle: 999,
+    transparentThreshold: -20,
+    curve: 'unknown',
+  });
+  assert.equal(result.stats.width, 4);
+  assert.equal(result.stats.height, 4);
+  assert.ok(result.stats.colorsUsed <= 64);
+});
