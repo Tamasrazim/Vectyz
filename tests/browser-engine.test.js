@@ -119,3 +119,13 @@ test('rejects invalid ImageData dimensions and pixel-buffer lengths', () => {
     /does not match/
   );
 });
+
+test('uses finite fallbacks for non-finite settings', () => {
+  const source = image(5, 5, (x, y) => (x === y ? [220, 70, 40, 255] : [0, 0, 0, 0]));
+  const result = vectorizeImageData(source, {
+    colors: Number.NaN, detail: Number.POSITIVE_INFINITY, minArea: Number.NaN,
+    cornerAngle: Number.NaN, alphaBins: Number.NaN, transparentThreshold: Number.NaN,
+  });
+  assert.match(result.svg, /<svg/);
+  assert.doesNotMatch(result.svg, /NaN|Infinity/);
+});

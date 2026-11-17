@@ -13,7 +13,7 @@ The browser GUI is a static, offline-first application. Its processing engine ru
 - Web Workers keep the main interface responsive while an image is processed.
 - IndexedDB stores original files and generated results as binary Blobs.
 - The service worker caches the application shell for offline launches after the first visit.
-- SVG rasterization removes scripts, embedded HTML, CSS stylesheets and external resource references before rendering.
+- SVG rasterization removes scripts, embedded HTML, CSS stylesheets and external resource references before rendering.\n- The 0.4.0 workspace adds original/vector comparison, synchronized zoom and pan, reconstruction presets, cancellable vectorization jobs, keyboard shortcuts and a responsive studio layout.
 
 ### Run locally
 
