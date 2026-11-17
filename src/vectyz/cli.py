@@ -25,7 +25,10 @@ def _build_parser() -> argparse.ArgumentParser:
     vector.add_argument("output", help="Output .svg, .pdf or .eps file.")
     vector.add_argument("--colors", type=int, default=16, help="Maximum palette colors (2–256).")
     vector.add_argument("--detail", type=float, default=1.0, help="Contour simplification amount.")
-    vector.add_argument("--min-area", type=float, default=2.0, help="Minimum component area in pixels.")
+    vector.add_argument(
+        "--min-area", type=float, default=2.0,
+        help="Minimum component area in pixels.",
+    )
     vector.add_argument(
         "--curve", choices=("smooth", "polygon"), default="smooth",
         help="Cubic Bézier fitting or polygon-only paths.",
