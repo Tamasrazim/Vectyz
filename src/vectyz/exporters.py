@@ -9,7 +9,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from .models import VectorPath, VectorizationResult
+from .models import VectorizationResult, VectorPath
 
 
 def build_svg(
