@@ -83,6 +83,7 @@ See `vectyz --help`, `vectyz vectorize --help` and `vectyz rasterize --help` for
 | `--min-area` | 2.0 | Ignore outer components smaller than this many source pixels. |
 | `--curve` | smooth | Use corner-aware cubic Bézier segments or straight polygon segments. |
 | `--alpha-bins` | 4 | Number of opacity bands used to approximate partial transparency. |
+| `--corner-angle` | 42 | Preserve vertices whose turning angle exceeds this value. |
 | `--transparent-threshold` | 4 | Alpha values at or below this value are treated as transparent. |
 
 ## Architecture
