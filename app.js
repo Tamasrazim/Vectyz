@@ -96,6 +96,7 @@ function revokePreviewUrls() {
 }
 
 function resetWorkspace() {
+  state.jobId += 1;
   revokePreviewUrls();
   if (state.worker) state.worker.terminate();
   state.worker = null;
@@ -113,6 +114,7 @@ function resetWorkspace() {
   $('rasterize-button').disabled = true;
   $('raster-download-button').disabled = true;
   $('preview-image').removeAttribute('src');
+  $('preview-image').style.maxWidth = '';
   $('library-panel').hidden = true;
   $('library-toggle').classList.remove('active');
   clearMessage();
@@ -129,9 +131,9 @@ function updateModeUi() {
     ? 'Convert pixels into editable paths. Processing stays on this device.'
     : 'Render an SVG into a bitmap. Scripts and external resources are stripped.';
   $('file-input').accept = vector
-    ? 'image/png,image/jpeg,image/webp,image/gif,image/bmp,image/tiff'
+    ? 'image/png,image/jpeg,image/webp,image/gif,image/bmp,.png,.jpg,.jpeg,.webp,.gif,.bmp'
     : '.svg,image/svg+xml';
-  $('drop-formats').textContent = vector ? 'PNG · JPEG · WEBP · GIF · BMP · TIFF' : 'SVG';
+  $('drop-formats').textContent = vector ? 'PNG · JPEG · WEBP · GIF · BMP' : 'SVG';
   $('vector-settings').hidden = !vector;
   $('raster-settings').hidden = vector;
   $('settings-title').textContent = vector ? 'Vector settings' : 'Raster settings';
@@ -189,9 +191,15 @@ async function readDimensions(file) {
 async function handleFile(file) {
   if (!file) return;
   clearMessage();
-  const isSvg = file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg');
-  if (state.mode === 'vectorize' && (isSvg || !file.type.startsWith('image/'))) {
-    notify('Choose a raster image such as PNG, JPEG or WebP.', 'error');
+  const extension = file.name.toLowerCase().split('.').pop();
+  const isSvg = file.type === 'image/svg+xml' || extension === 'svg';
+  const supportedRaster = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(extension);
+  if (state.mode === 'vectorize' && (isSvg || !supportedRaster || (file.type && !file.type.startsWith('image/') && file.type !== 'application/octet-stream'))) {
+    notify('Choose a supported raster image: PNG, JPEG, WebP, GIF or BMP.', 'error');
+    return;
+  }
+  if (file.size > 200 * 1024 * 1024) {
+    notify('This file exceeds the 200 MB browser import limit.', 'error');
     return;
   }
   if (state.mode === 'rasterize' && !isSvg) {
@@ -214,6 +222,11 @@ async function handleFile(file) {
       if (state.file !== file) return;
       $('asset-meta').textContent = dimensions.width + ' × ' + dimensions.height + ' · ' + formatBytes(file.size);
       $('preview-dimensions').textContent = dimensions.width + ' × ' + dimensions.height;
+      if (dimensions.width * dimensions.height > 12000000) {
+        notify('This build supports images up to 12 megapixels. Choose a smaller image before vectorizing.', 'error');
+        resetWorkspace();
+        return;
+      }
     } catch (error) {
       notify('The browser could not decode this image: ' + error.message, 'error');
       resetWorkspace();
@@ -278,7 +291,7 @@ async function runVectorization() {
   state.worker = worker;
   worker.onmessage = async function (event) {
     const message = event.data || {};
-    if (message.jobId !== jobId) return;
+    if (message.jobId !== jobId || jobId !== state.jobId) return;
     if (message.type === 'progress') {
       updateProgress(message.phase, message.progress);
       $('progress-note').textContent = message.total
@@ -309,6 +322,7 @@ async function runVectorization() {
     }
   };
   worker.onerror = function (event) {
+    if (jobId !== state.jobId) return;
     worker.terminate();
     state.worker = null;
     $('progress-panel').hidden = true;
@@ -323,12 +337,12 @@ function sanitizeSvgText(source) {
   if (documentNode.querySelector('parsererror')) throw new Error('The SVG file is malformed.');
   const root = documentNode.documentElement;
   if (!root || root.localName.toLowerCase() !== 'svg') throw new Error('The file does not contain an SVG root element.');
-  documentNode.querySelectorAll('script,foreignObject,iframe,object,embed,link,style,image').forEach((node) => node.remove());
+  documentNode.querySelectorAll('script,foreignObject,iframe,object,embed,link,style,image,audio,video,canvas,animate,animateMotion,animateTransform,set').forEach((node) => node.remove());
   for (const element of documentNode.querySelectorAll('*')) {
     for (const attribute of Array.from(element.attributes)) {
       const name = attribute.name.toLowerCase();
       const value = attribute.value.trim();
-      if (name.startsWith('on') || name === 'src') {
+      if (name.startsWith('on') || name === 'src' || name === 'xml:base') {
         element.removeAttribute(attribute.name);
       } else if ((name === 'href' || name.endsWith(':href')) && value && !value.startsWith('#')) {
         element.removeAttribute(attribute.name);
@@ -385,7 +399,7 @@ async function runRasterization() {
       canvas.height = height;
       const context = canvas.getContext('2d');
       if (!context) throw new Error('Canvas rendering is unavailable in this browser.');
-      if ($('raster-format').value !== 'image/png') {
+      if ($('raster-format').value === 'image/jpeg') {
         context.fillStyle = '#ffffff';
         context.fillRect(0, 0, width, height);
       }
